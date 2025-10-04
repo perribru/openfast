@@ -30,6 +30,8 @@ MODULE TSSubs
 
    IMPLICIT NONE
 
+   INTEGER, PUBLIC :: ProgressUnit = -1   ! File unit for progress output (set by main program)
+   CHARACTER(1024), PUBLIC :: ProgressFile = ''  ! Progress file name
 
 
 CONTAINS
@@ -64,6 +66,8 @@ INTEGER                       :: IVec  ! wind component, 1=u, 2=v, 3=w
                               
 INTEGER(IntKi)                :: ErrStat2
 CHARACTER(MaxMsgLen)          :: ErrMsg2
+REAL(ReKi)                    :: Progress       ! Progress [0,1]
+INTEGER(IntKi)                :: TotalFreq      ! Total frequencies to process
    
 
    
@@ -82,6 +86,12 @@ CHARACTER(MaxMsgLen)          :: ErrMsg2
       RETURN
    END IF
    
+   ! Update progress after allocations
+   IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+      OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+      WRITE(ProgressUnit, '(F8.6)') 0.605
+      CLOSE(ProgressUnit)
+   END IF
    
    !--------------------------------------------------------------------------------
    ! Calculate the distances and other parameters that don't change with frequency
@@ -103,6 +113,8 @@ CHARACTER(MaxMsgLen)          :: ErrMsg2
    ! Calculate the fourier coefficients
    !---------------------------------------------------------------------------------
    
+   TotalFreq = 3 * p%grid%NumFreq
+   
    DO IVec = 1,3
    
       IF (p%met%SCMod(IVec) /= CohMod_IEC) CYCLE ! Check the next component (this one doesn't use the IEC method)
@@ -116,6 +128,15 @@ CHARACTER(MaxMsgLen)          :: ErrMsg2
       !---------------------------------------------------------------------------------
 
       DO IFREQ = 1,p%grid%NumFreq
+         ! Write progress to file (every 0.1% or every 10 iterations, whichever is less frequent)
+         IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+            IF (MOD(IFreq, MAX(1, p%grid%NumFreq/1000)) == 0 .OR. IFreq == p%grid%NumFreq) THEN
+               Progress = 0.60 + 0.10 * REAL((IVec-1)*p%grid%NumFreq + IFreq, ReKi) / REAL(TotalFreq, ReKi)
+               OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+               WRITE(ProgressUnit, '(F8.6)') Progress
+               CLOSE(ProgressUnit)
+            END IF
+         END IF
          ! -----------------------------------------------
          ! Create the coherence matrix for this frequency
          ! -----------------------------------------------
@@ -210,6 +231,8 @@ INTEGER                       :: IVec  ! wind component, 1=u, 2=v, 3=w
                               
 INTEGER(IntKi)                :: ErrStat2
 CHARACTER(MaxMsgLen)          :: ErrMsg2
+REAL(ReKi)                    :: Progress       ! Progress [0,1]
+INTEGER(IntKi)                :: TotalFreq      ! Total frequencies to process
    
 
    
@@ -317,6 +340,8 @@ ENDIF
    ! Calculate the fourier coefficients
    !---------------------------------------------------------------------------------
    
+   TotalFreq = 3 * p%grid%NumFreq
+   
    DO IVec = 1,3
    
       IF (p%met%SCMod(IVec) /= CohMod_GENERAL) CYCLE ! Check the next component (this one doesn't use the GENERAL method)
@@ -330,6 +355,15 @@ ENDIF
       !---------------------------------------------------------------------------------
 
       DO IFREQ = 1,p%grid%NumFreq
+         ! Write progress to file (every 0.1% or every 10 iterations, whichever is less frequent)
+         IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+            IF (MOD(IFreq, MAX(1, p%grid%NumFreq/1000)) == 0 .OR. IFreq == p%grid%NumFreq) THEN
+               Progress = 0.60 + 0.10 * REAL((IVec-1)*p%grid%NumFreq + IFreq, ReKi) / REAL(TotalFreq, ReKi)
+               OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+               WRITE(ProgressUnit, '(F8.6)') Progress
+               CLOSE(ProgressUnit)
+            END IF
+         END IF
          ! -----------------------------------------------
          ! Create the coherence matrix for this frequency
          ! -----------------------------------------------
@@ -492,6 +526,13 @@ CHARACTER(MaxMsgLen)                        :: ErrMsg2
       RETURN
    END IF
 
+   ! Update progress after TRH allocation
+   IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+      OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+      WRITE(ProgressUnit, '(F8.6)') 0.60
+      CLOSE(ProgressUnit)
+   END IF
+
    CALL CalcFourierCoeffs_IEC(     p, U, PhaseAngles, S, V, TRH, ErrStat2, ErrMsg2 ); CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, 'CalcFourierCoeffs')   
    CALL CalcFourierCoeffs_API(     p, U, PhaseAngles, S, V, TRH, ErrStat2, ErrMsg2 ); CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, 'CalcFourierCoeffs')   
    CALL CalcFourierCoeffs_General( p, U, PhaseAngles, S, V, TRH, ErrStat2, ErrMsg2 ); CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, 'CalcFourierCoeffs')   
@@ -544,6 +585,8 @@ LOGICAL,    PARAMETER        :: COH_OUT   = .FALSE.                       ! This
 
 INTEGER(IntKi)                :: ErrStat2
 CHARACTER(MaxMsgLen)          :: ErrMsg2
+REAL(ReKi)                    :: Progress       ! Progress [0,1]
+INTEGER(IntKi)                :: TotalFreq      ! Total frequencies to process
 
 REAL, PARAMETER :: Qc(3)     = (/ 1.00, 1.00, 1.25 /)
 REAL, PARAMETER :: Pc(3)     = (/ 0.40, 0.40, 0.50 /)
@@ -619,6 +662,8 @@ ENDIF
    ! Calculate the fourier coefficients
    !---------------------------------------------------------------------------------
    
+   TotalFreq = 3 * p%grid%NumFreq
+   
    DO IVec = 1,1 !BJJ: note that only the u component is defined, and I don't want to look at how to change the coherence in the other components....
    
       IF (p%met%SCMod(IVec) /= CohMod_API) CYCLE ! Check the next component (this one doesn't use the API method)
@@ -630,6 +675,15 @@ ENDIF
    !---------------------------------------------------------------------------------
       
       DO IFREQ = 1,p%grid%NumFreq
+         ! Write progress to file (every 0.1% or every 10 iterations, whichever is less frequent)
+         IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+            IF (MOD(IFreq, MAX(1, p%grid%NumFreq/1000)) == 0 .OR. IFreq == p%grid%NumFreq) THEN
+               Progress = 0.60 + 0.10 * REAL((IVec-1)*p%grid%NumFreq + IFreq, ReKi) / REAL(TotalFreq, ReKi)
+               OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+               WRITE(ProgressUnit, '(F8.6)') Progress
+               CLOSE(ProgressUnit)
+            END IF
+         END IF
          ! -----------------------------------------------
          ! Create the coherence matrix for this frequency
          ! -----------------------------------------------
@@ -900,6 +954,8 @@ SUBROUTINE Coeffs2TimeSeries( V, NumSteps, NPoints, NUsrPoints, ErrStat, ErrMsg 
    INTEGER(IntKi)                   :: IPoint                        ! loop counter for grid points
    
    INTEGER(IntKi)                   :: ErrStat2                      ! Error level (local)
+   REAL(ReKi)                       :: Progress                      ! Progress [0,1]
+   INTEGER(IntKi)                   :: TotalPoints                   ! Total points to process
   !CHARACTER(MaxMsgLen)             :: ErrMsg2                       ! Message describing error (local)
    
 
@@ -925,11 +981,23 @@ CALL InitFFT( NumSteps, FFT_Data, ErrStat=ErrStat2 )
 
 CALL WrScr ( ' Generating time series for all points:' )
 
+TotalPoints = 3 * NPoints
+
 DO IVec=1,3
 
    CALL WrScr ( '    '//Comp(IVec)//'-component' )
 
    DO IPoint=1,NPoints    !NTotB
+   
+      ! Write progress to file (every 0.1% or every 10 iterations)
+      IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+         IF (MOD(IPoint, MAX(1, NPoints/1000)) == 0 .OR. IPoint == NPoints) THEN
+            Progress = 0.70 + 0.30 * REAL((IVec-1)*NPoints + IPoint, ReKi) / REAL(TotalPoints, ReKi)
+            OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+            WRITE(ProgressUnit, '(F8.6)') Progress
+            CLOSE(ProgressUnit)
+         END IF
+      END IF
 
          ! Overwrite the first point with zero.  This sets the real (and 
          ! imaginary) part of the steady-state value to zero so that we 
@@ -1004,6 +1072,7 @@ SUBROUTINE CalcTargetPSD(p, S, U, ErrStat, ErrMsg)
    INTEGER(IntKi)                   :: IPoint, iPointUsr                ! loop counter for grid points
    
    REAL(ReKi),   ALLOCATABLE        :: SSVS (:,:)                       ! A temporary work array (NumFreq,3) that holds a single-sided velocity spectrum.
+   REAL(ReKi)                       :: Progress                         ! Progress [0,1]
    REAL(ReKi)                       :: DUDZ                             ! The steady u-component wind shear for the grid  [used in Hydro models only].
    REAL(ReKi)                       :: ZTmp, UTmp                       ! temporary height and velocity used for finite difference calculations
    
@@ -1044,6 +1113,14 @@ SUBROUTINE CalcTargetPSD(p, S, U, ErrStat, ErrMsg)
       
          DO IVec=1,3
             DO IFreq=1,p%grid%NumFreq
+               IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+                  IF (MOD(IFreq, MAX(1, p%grid%NumFreq/1000)) == 0 .OR. IFreq == p%grid%NumFreq) THEN
+                     Progress = 0.60 * REAL((IVec-1)*p%grid%NumFreq + IFreq, ReKi) / REAL(3*p%grid%NumFreq, ReKi)
+                     OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+                     WRITE(ProgressUnit, '(F8.6)') Progress
+                     CLOSE(ProgressUnit)
+                  END IF
+               END IF
                S(IFreq,:,IVec) = SSVS(IFreq,IVec)*HalfDelF
             END DO ! IFreq
          END DO ! IVec
@@ -1054,6 +1131,14 @@ SUBROUTINE CalcTargetPSD(p, S, U, ErrStat, ErrMsg)
    
          DO IVec=1,3
             DO IFreq=1,p%grid%NumFreq
+               IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+                  IF (MOD(IFreq, MAX(1, p%grid%NumFreq/1000)) == 0 .OR. IFreq == p%grid%NumFreq) THEN
+                     Progress = 0.60 * REAL((IVec-1)*p%grid%NumFreq + IFreq, ReKi) / REAL(3*p%grid%NumFreq, ReKi)
+                     OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+                     WRITE(ProgressUnit, '(F8.6)') Progress
+                     CLOSE(ProgressUnit)
+                  END IF
+               END IF
                S(IFreq,:,IVec) = SSVS(IFreq,IVec)*HalfDelF
             END DO ! IFreq
          END DO ! IVec       
@@ -1291,6 +1376,7 @@ SUBROUTINE CreateGrid( p_grid, p_usr, UHub, AddTower, ErrStat, ErrMsg )
 
          ! make sure NumSteps is an even number and a product of small primes
       NumSteps2          = ( p_grid%NumSteps - 1 )/2 + 1
+      
       p_grid%NumSteps    = 2*PSF( NumSteps2 , 9, subtract=p_usr%NPoints > 0)  ! >= 2*NumSteps2 = NumSteps + 1 - MOD(NumSteps-1,2) >= NumSteps
       
       p_grid%NumOutSteps = p_grid%NumSteps
@@ -1300,6 +1386,14 @@ SUBROUTINE CreateGrid( p_grid, p_usr, UHub, AddTower, ErrStat, ErrMsg )
       
          ! make sure NumSteps is an even number and a product of small primes      
       NumSteps2          = ( p_grid%NumSteps - 1 )/2 + 1
+      
+      ! Update progress before PSF (can be slow)
+      IF (ProgressUnit > 0 .AND. LEN_TRIM(ProgressFile) > 0) THEN
+         OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+         WRITE(ProgressUnit, '(F8.6)') 0.05
+         CLOSE(ProgressUnit)
+      END IF
+      
       p_grid%NumSteps    = 2*PSF( NumSteps2 , 9, subtract=p_usr%NPoints > 0 )  ! >= 2*NumSteps2 = NumOutSteps + 1 - MOD(NumOutSteps-1,2) >= NumOutSteps
       
    END IF

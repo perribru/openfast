@@ -111,6 +111,13 @@ IF ( LEN( TRIM(FlagArg) ) > 0 ) CALL NormStop()
    
 CALL GetRoot( InFile, p%RootName )
 
+   ! Initialize progress file immediately
+ProgressFile = TRIM(p%RootName)//'.progress'
+CALL GetNewUnit( ProgressUnit )
+OPEN( UNIT=ProgressUnit, FILE=TRIM(ProgressFile), STATUS='REPLACE', ACTION='WRITE' )
+WRITE(ProgressUnit, '(F8.6)') 0.0
+CLOSE(ProgressUnit)
+
    ! Open input file and summary file.
 
 CALL OpenSummaryFile( p%RootName, p%US, p%DescStr, ErrStat, ErrMsg )

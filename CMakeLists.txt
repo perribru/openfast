@@ -187,30 +187,31 @@ endif()
 set(OPENFAST_MODULES
   nwtc-library
   version
-  inflowwind
-  extloads
-  aerodyn
-  aerodisk
-  servodyn
-  elastodyn
-  beamdyn
-  subdyn
-  seastate
-  hydrodyn
-  orcaflex-interface
-  extptfm
-  feamooring
-  moordyn
-  icedyn
-  icefloe
-  wakedynamics
-  awae
-  lindyn
-  map
+## inflowwind
+## extloads
+## aerodyn
+## aerodisk
+## servodyn
+## elastodyn
+## beamdyn
+## subdyn
+## seastate
+## hydrodyn
+## orcaflex-interface
+## extptfm
+## feamooring
+## moordyn
+## icedyn
+## icefloe
+## wakedynamics
+## awae
+## lindyn
+## map
   turbsim
-  externalinflow
-  openfast-library
-  simple-elastodyn
+  #supercontroller
+  #externalinflow
+  #openfast-library
+  #simple-elastodyn
 )
 
 set(OPENFAST_REGISTRY_INCLUDES "" CACHE INTERNAL "Registry includes paths")
